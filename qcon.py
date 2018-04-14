@@ -92,15 +92,21 @@ class Process(object):
         self.toggle()
 
     def activate(self):
+        if not getattr(self, 'window', None):
+            return
         self.window.activate(GdkX11.x11_get_server_time(self.x11window))
         self.window.set_skip_tasklist(False)
         self.window.make_above()
 
     def hide(self):
+        if not getattr(self, 'window', None):
+            return
         self.window.minimize()
         self.window.set_skip_tasklist(True)
 
     def toggle(self):
+        if not getattr(self, 'window', None):
+            return
         scr = Wnck.Screen.get_default()
         if scr.get_active_window() == self.window:
             self.hide()
