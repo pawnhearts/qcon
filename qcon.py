@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-__VERSION__ = '2.1'
+__VERSION__ = '2.2'
 __LICENSE__ = 'MIT'
 __URL__ = 'https://github.com/pawnhearts/qcon/'
 
@@ -47,6 +47,7 @@ Decorations: true
 Opacity: 0.7
 """
 
+processes = []
 
 def is_process_running(process_id):
     try:
@@ -151,8 +152,12 @@ class Process(object):
             sys.exit()
 
     def setup_geometry(self):
-        if not Config.getboolean(self.name, 'Decorations'):
+        if Config.getboolean(self.name, 'Decorations'):
+            self.x11window.set_decorations(Gdk.WMDecoration.MINIMIZE | Gdk.WMDecoration.TITLE | Gdk.WMDecoration.BORDER)
+        else:
             self.x11window.set_decorations(0)
+
+        self.x11window.set_functions(Gdk.WMFunction.CLOSE | Gdk.WMFunction.MINIMIZE | Gdk.WMFunction.RESIZE)
         # BORDER, TITLE, MINIMIZE, MENU, RESIZEH, MAXIMIZE
         scr = Wnck.Screen.get_default()
         if Config.get(self.name, 'Width').endswith('%'):
@@ -182,7 +187,7 @@ def make_menu():
     menu = Gtk.Menu()
     item_restart = Gtk.MenuItem("Random Pokemon")
     item_restart.connect('activate', on_restrast)
-    menu.append(item_restar)
+    menu.append(item_restart)
     item_quit = Gtk.MenuItem("Quit")
     item_quit.connect('activate', Gtk.main_quit)
     menu.append(item_quit)
@@ -217,7 +222,6 @@ if __name__ == '__main__':
     indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
     indicator.set_menu(make_menu())
     indicator.set_icon('utilities-terminal')
-    processes = []
     for section in Config.sections():
         processes.append(Process(section))
     Gtk.main()
