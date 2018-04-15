@@ -5,8 +5,12 @@ Several terminals(or other software) can be configured.
 It's compact and consists of a single file.
 
 Installation:
+
 git clone https://github.com/pawnhearts/qcon
 cd qcon
 sudo cp qcon.py /usr/local/bin/qcon
+
+Or just pip install qcon
+
 Requirements:
 gir1.2-keybinder libkeybinder-3.0-0 python-gi python-keybinder

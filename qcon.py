@@ -1,13 +1,20 @@
 #!/usr/bin/python
+
+__VERSION__ = '2.1'
+__LICENSE__ = 'MIT'
+__URL__ = 'https://github.com/pawnhearts/qcon/'
+
 import gi
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 gi.require_version('Wnck', '3.0')
 gi.require_version('Keybinder', '3.0')
-from gi.repository import Gtk, Gdk, Wnck, GdkX11, GObject, Keybinder
+gi.require_version('AppIndicator3', '0.1')
+from gi.repository import Gtk, Gdk, Wnck, GdkX11, GObject, Keybinder, AppIndicator3
 import sys, os, signal, atexit, shlex
 import ConfigParser
+from subprocess import Popen, PIPE
 
 CONFIG_SAMPLE = """
 [xterm]
@@ -23,6 +30,7 @@ StartHidden: true
 Restart: true
 HideWhenLosesFocus: true
 Decorations: false
+Opacity: 0.7
 [top]
 Position-x: right
 Position-y: bottom
@@ -36,6 +44,7 @@ StartHidden: true
 Restart: false
 HideWhenLosesFocus: true
 Decorations: true
+Opacity: 0.7
 """
 
 
@@ -64,11 +73,9 @@ class Process(object):
 
     def spawn_process(self):
         os.chdir(os.path.expanduser('~'))
-        pid = GObject.spawn_async(shlex.split(Config.get(self.name, 'Command')), flags=(
-                    GObject.SPAWN_SEARCH_PATH | GObject.SPAWN_STDOUT_TO_DEV_NULL | GObject.SPAWN_STDERR_TO_DEV_NULL) |
-                                  GObject.SPAWN_DO_NOT_REAP_CHILD)[0]
-        self.pid = pid
-        GObject.child_watch_add(pid, self.on_child_exit)
+        ps = Popen(shlex.split(Config.get(self.name, 'Command')), stdout=PIPE, stdin=PIPE)
+        self.pid = ps.pid
+        GObject.child_watch_add(self.pid, self.on_child_exit)
         GObject.timeout_add(100, self._search_window)
 
     def _search_window(self):
@@ -85,8 +92,19 @@ class Process(object):
     def setup_window(self):
         self.x11window = GdkX11.X11Window.foreign_new_for_display(GdkX11.X11Display.get_default(),
                                                                   self.window.get_xid())
-        self.setup_geometry()
+        #self.x11window.set_functions(Gdk.WMFunction.RESIZE|Gdk.WMFunction.MINIMIZE|Gdk.WMFunction.CLOSE)
+        self.x11window.set_opacity(Config.getfloat(self.name, 'Opacity'))
         Wnck.Screen.get_default().connect('active_window_changed', self.on_hide_inactive)
+        def foo(*args):
+            print(args)
+        self.setup_geometry()
+        self.window.connect('geometry-changed', self.on_window_resize)
+        self.window.stick()
+        if Config.getboolean(self.name, 'StartHidden'):
+            self.hide()
+
+    def on_window_resize(self, win):
+        pass
 
     def on_key_press(self, *args):
         self.toggle()
@@ -96,13 +114,16 @@ class Process(object):
             return
         self.window.activate(GdkX11.x11_get_server_time(self.x11window))
         self.window.set_skip_tasklist(False)
+        self.window.set_skip_pager(False)
         self.window.make_above()
+        self.setup_geometry()
 
     def hide(self):
         if not getattr(self, 'window', None):
             return
         self.window.minimize()
         self.window.set_skip_tasklist(True)
+        self.window.set_skip_pager(True)
 
     def toggle(self):
         if not getattr(self, 'window', None):
@@ -122,7 +143,9 @@ class Process(object):
         if errcode != 0:
             raise OSError('Terminal {} crashed'.format(self.name))
         if Config.getboolean(self.name, 'Restart'):
-            Process(self.name)
+            processes.remove(self)
+            pr = Process(self.name)
+            processes.append(pr)
             del self
         else:
             sys.exit()
@@ -152,8 +175,33 @@ class Process(object):
             y = scr.get_height() / 2 - (h / 2) + y
         self.x11window.move(x, y)
         self.x11window.resize(w, h)
-        if Config.getboolean(self.name, 'StartHidden'):
-            self.hide()
+        # self.window.set_geometry(Wnck.WindowGravity.STATIC, Wnck.WindowMoveResizeMask.X | Wnck.WindowMoveResizeMask.Y | Wnck.WindowMoveResizeMask.WIDTH | Wnck.WindowMoveResizeMask.HEIGHT, x, y, w, h)
+
+
+def make_menu():
+    menu = Gtk.Menu()
+    item_restart = Gtk.MenuItem("Random Pokemon")
+    item_restart.connect('activate', on_restrast)
+    menu.append(item_restar)
+    item_quit = Gtk.MenuItem("Quit")
+    item_quit.connect('activate', Gtk.main_quit)
+    menu.append(item_quit)
+    menu.show_all()
+    return menu
+
+
+def on_restrast():
+    os.system('ps aux|grep qcon.py|grep -v {}'.format(os.getpid()))
+    os.execv(sys.executable, ['python'] + sys.argv)
+
+
+@atexit.register
+def kill_terms():
+    for proc in processes:
+        try:
+            os.kill(proc.pid, 9)
+        except OSError:
+            pass
 
 
 if __name__ == '__main__':
@@ -165,6 +213,11 @@ if __name__ == '__main__':
     Config.read(os.path.expanduser('~/.qconrc'))
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     Keybinder.init()
+    indicator = AppIndicator3.Indicator.new('qcon', 'qcon', AppIndicator3.IndicatorCategory.OTHER)
+    indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
+    indicator.set_menu(make_menu())
+    indicator.set_icon('utilities-terminal')
+    processes = []
     for section in Config.sections():
-        Process(section)
+        processes.append(Process(section))
     Gtk.main()
