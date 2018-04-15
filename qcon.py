@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-__VERSION__ = '2.2'
+__VERSION__ = '2.3'
 __LICENSE__ = 'MIT'
 __URL__ = 'https://github.com/pawnhearts/qcon/'
 
@@ -99,13 +99,10 @@ class Process(object):
         def foo(*args):
             print(args)
         self.setup_geometry()
-        self.window.connect('geometry-changed', self.on_window_resize)
+        # self.window.connect('state-changed', self.on_window_resize)
         self.window.stick()
         if Config.getboolean(self.name, 'StartHidden'):
             self.hide()
-
-    def on_window_resize(self, win):
-        pass
 
     def on_key_press(self, *args):
         self.toggle()
@@ -117,12 +114,13 @@ class Process(object):
         self.window.set_skip_tasklist(False)
         self.window.set_skip_pager(False)
         self.window.make_above()
-        self.setup_geometry()
+        # self.setup_geometry()
 
     def hide(self):
         if not getattr(self, 'window', None):
             return
         self.window.minimize()
+        self.x11window.iconify()
         self.window.set_skip_tasklist(True)
         self.window.set_skip_pager(True)
 
@@ -157,7 +155,8 @@ class Process(object):
         else:
             self.x11window.set_decorations(0)
 
-        self.x11window.set_functions(Gdk.WMFunction.CLOSE | Gdk.WMFunction.MINIMIZE | Gdk.WMFunction.RESIZE)
+        if not Config.getboolean(self.name, 'Decorations'):
+            self.x11window.set_functions(Gdk.WMFunction.CLOSE | Gdk.WMFunction.MINIMIZE | Gdk.WMFunction.RESIZE)
         # BORDER, TITLE, MINIMIZE, MENU, RESIZEH, MAXIMIZE
         scr = Wnck.Screen.get_default()
         if Config.get(self.name, 'Width').endswith('%'):
@@ -195,8 +194,12 @@ def make_menu():
     return menu
 
 
-def on_restrast():
+def kill_other_copies():
     os.system('ps aux|grep qcon.py|grep -v {}'.format(os.getpid()))
+
+
+def on_restrast():
+    kill_other_copies()
     os.execv(sys.executable, ['python'] + sys.argv)
 
 
@@ -214,6 +217,7 @@ if __name__ == '__main__':
         open(os.path.expanduser('~/.qconrc'), 'w').write(CONFIG_SAMPLE)
         print "Default ~/.qconrc has been written, edit it and run again"
         sys.exit()
+    kill_other_copies()
     Config = ConfigParser.ConfigParser()
     Config.read(os.path.expanduser('~/.qconrc'))
     signal.signal(signal.SIGINT, signal.SIG_DFL)

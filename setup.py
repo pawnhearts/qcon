@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'qcon',
-    version = '2.2',
+    version = '2.3',
     scripts=['qcon.py'],
 
     author = 'pawnhearts',
