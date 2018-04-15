@@ -184,7 +184,7 @@ class Process(object):
 
 def make_menu():
     menu = Gtk.Menu()
-    item_restart = Gtk.MenuItem("Random Pokemon")
+    item_restart = Gtk.MenuItem("Restart")
     item_restart.connect('activate', on_restrast)
     menu.append(item_restart)
     item_quit = Gtk.MenuItem("Quit")
