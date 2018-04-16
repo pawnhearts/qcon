@@ -13,15 +13,15 @@ gi.require_version('Keybinder', '3.0')
 gi.require_version('AppIndicator3', '0.1')
 from gi.repository import Gtk, Gdk, Wnck, GdkX11, GObject, Keybinder, AppIndicator3
 import sys, os, signal, atexit, shlex
-import ConfigParser
+import configparser
 from subprocess import Popen, PIPE
 
 CONFIG_SAMPLE = """
 [xterm]
 Position-x: center
 Position-y: top
-Width: 100%
-Height: 400
+Width: 100
+Height: 40
 Offset-x: 0
 Offset-y: 0
 Key: F12
@@ -34,8 +34,8 @@ Opacity: 0.7
 [top]
 Position-x: right
 Position-y: bottom
-Width: 400
-Height: 400
+Width: 40
+Height: 40
 Offset-x: 0
 Offset-y: 0
 Key: <ctrl>F11
@@ -86,7 +86,11 @@ class Process(object):
     def setup_window(self):
         self.x11window = GdkX11.X11Window.foreign_new_for_display(GdkX11.X11Display.get_default(),
                                                                   self.window.get_xid())
-        self.x11window.set_functions(Gdk.WMFunction.RESIZE|Gdk.WMFunction.MINIMIZE|Gdk.WMFunction.CLOSE)
+        func = Gdk.WMFunction.RESIZE|Gdk.WMFunction.MINIMIZE|Gdk.WMFunction.CLOSE|Gdk.WMFunction.MOVE
+        if Config.getboolean(self.name, 'Movable'):
+            func = func | Gdk.WMFunction.MOVE
+        self.x11window.set_functions(func)
+
         self.x11window.set_opacity(Config.getfloat(self.name, 'Opacity'))
         Wnck.Screen.get_default().connect('active_window_changed', self.on_hide_inactive)
         self.setup_geometry()
@@ -195,7 +199,7 @@ def kill_children():
 
 
 def kill_other_copies():
-    os.system(r'ps aux|grep qcon.py|grep -v %s|awk "{print $2}"|xargs kill -7' % os.getpid())
+    os.system(r"ps aux|grep qcon.py|grep -v %s|awk '{print $2}'|xargs kill -7" % os.getpid())
 
 
 def restart():
@@ -208,7 +212,19 @@ if not os.path.exists(os.path.expanduser('~/.qconrc')):
     print "Default ~/.qconrc has been written, modify it according to your needs and run again"
     sys.exit()
 kill_other_copies()
-Config = ConfigParser.ConfigParser()
+ConfigDefaults = {
+'Position-x': 'left',
+'Position-y': 'top',
+'Offset-x': 0,
+'Offset-y': 0,
+'StartHidden': 0,
+'Restart': 0,
+'HideWhenLosesFocus': 0,
+'Decorations': 1,
+'Opacity': 1.0,
+'Movable': 1,
+}
+Config = configparser.ConfigParser(interpolation=None, defaults=ConfigDefaults)
 Config.read(os.path.expanduser('~/.qconrc'))
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 signal.signal(signal.SIGHUP, restart)
