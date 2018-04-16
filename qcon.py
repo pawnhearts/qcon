@@ -86,13 +86,10 @@ class Process(object):
     def setup_window(self):
         self.x11window = GdkX11.X11Window.foreign_new_for_display(GdkX11.X11Display.get_default(),
                                                                   self.window.get_xid())
-        #self.x11window.set_functions(Gdk.WMFunction.RESIZE|Gdk.WMFunction.MINIMIZE|Gdk.WMFunction.CLOSE)
+        self.x11window.set_functions(Gdk.WMFunction.RESIZE|Gdk.WMFunction.MINIMIZE|Gdk.WMFunction.CLOSE)
         self.x11window.set_opacity(Config.getfloat(self.name, 'Opacity'))
         Wnck.Screen.get_default().connect('active_window_changed', self.on_hide_inactive)
-        def foo(*args):
-            print(args)
         self.setup_geometry()
-        # self.window.connect('state-changed', self.on_window_resize)
         self.window.stick()
         if Config.getboolean(self.name, 'StartHidden'):
             self.hide()
@@ -176,7 +173,7 @@ class Process(object):
 def make_menu():
     menu = Gtk.Menu()
     item_restart = Gtk.MenuItem("Restart")
-    item_restart.connect('activate', on_restrast)
+    item_restart.connect('activate', restart)
     menu.append(item_restart)
     item_quit = Gtk.MenuItem("Quit")
     item_quit.connect('activate', Gtk.main_quit)
@@ -198,7 +195,7 @@ def kill_children():
 
 
 def kill_other_copies():
-    os.system("ps aux|grep qcon.py|grep -v {}|awk '{print $2}'|xargs kill -7".format(os.getpid()))
+    os.system(r'ps aux|grep qcon.py|grep -v %s|awk "{print $2}"|xargs kill -7' % os.getpid())
 
 
 def restart():
@@ -209,7 +206,7 @@ def restart():
 if __name__ == '__main__':
     if not os.path.exists(os.path.expanduser('~/.qconrc')):
         open(os.path.expanduser('~/.qconrc'), 'w').write(CONFIG_SAMPLE)
-        print "Default ~/.qconrc has been written, edit it and run again"
+        print "Default ~/.qconrc has been written, modify it according to your needs and run again"
         sys.exit()
     kill_other_copies()
     Config = ConfigParser.ConfigParser()
