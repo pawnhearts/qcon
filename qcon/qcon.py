@@ -202,23 +202,23 @@ def restart():
     kill_other_copies()
     os.execv(sys.executable, ['python'] + sys.argv)
 
+#if __name__ == '__main__':
+if not os.path.exists(os.path.expanduser('~/.qconrc')):
+    open(os.path.expanduser('~/.qconrc'), 'w').write(CONFIG_SAMPLE)
+    print "Default ~/.qconrc has been written, modify it according to your needs and run again"
+    sys.exit()
+kill_other_copies()
+Config = ConfigParser.ConfigParser()
+Config.read(os.path.expanduser('~/.qconrc'))
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+signal.signal(signal.SIGHUP, restart)
+atexit.register(kill_children)
+Keybinder.init()
+indicator = AppIndicator3.Indicator.new('qcon', 'qcon', AppIndicator3.IndicatorCategory.OTHER)
+indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
+indicator.set_menu(make_menu())
+indicator.set_icon('utilities-terminal')
+for section in Config.sections():
+    Process(section)
+Gtk.main()
 
-if __name__ == '__main__':
-    if not os.path.exists(os.path.expanduser('~/.qconrc')):
-        open(os.path.expanduser('~/.qconrc'), 'w').write(CONFIG_SAMPLE)
-        print "Default ~/.qconrc has been written, modify it according to your needs and run again"
-        sys.exit()
-    kill_other_copies()
-    Config = ConfigParser.ConfigParser()
-    Config.read(os.path.expanduser('~/.qconrc'))
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-    signal.signal(signal.SIGHUP, restart)
-    atexit.register(kill_children)
-    Keybinder.init()
-    indicator = AppIndicator3.Indicator.new('qcon', 'qcon', AppIndicator3.IndicatorCategory.OTHER)
-    indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
-    indicator.set_menu(make_menu())
-    indicator.set_icon('utilities-terminal')
-    for section in Config.sections():
-        Process(section)
-    Gtk.main()
