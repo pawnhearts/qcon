@@ -8,7 +8,7 @@ setup(
     name = 'qcon',
     version = '2.5',
 
-    scripts=['qcon'],
+    scripts=['scripts/qcon'],
     packages=['qcon'],
 
     author = 'pawnhearts',
