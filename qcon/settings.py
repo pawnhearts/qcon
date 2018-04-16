@@ -10,7 +10,14 @@ w=builder.get_object('settings')
 
 class Handler:
     def on_hotkey(ev, widget, key):
-        widget.set_text(Gdk.keyval_name(key.keyval))
+        k = Gdk.keyval_name(key.keyval)
+        if Gdk.ModifierType.CONTROL_MASK & key.state:
+            k = '<Ctrl>{}'.format(k)
+        if Gdk.ModifierType.SUPER_MASK & key.state:
+            k = '<Super>{}'.format(k)
+        if Gdk.ModifierType.META_MASK & key.state:
+            k = '<Alt>{}'.format(k)
+        widget.set_text(k)
     def on_save(*args):
         pass
     def on_close(*args):
