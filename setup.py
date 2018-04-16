@@ -3,11 +3,11 @@
 
 import os,glob
 from setuptools import setup, find_packages
-
+import qcon
 
 setup(
     name = 'qcon',
-    version = '2.3',
+    version = qcon.__VERSION__,
     scripts=['qcon.py'],
 
     author = 'pawnhearts',
