@@ -3,12 +3,13 @@
 
 import os,glob
 from setuptools import setup, find_packages
-import qcon
 
 setup(
     name = 'qcon',
-    version = qcon.__VERSION__,
-    scripts=['qcon.py'],
+    version = '2.5',
+
+    scripts=['qcon'],
+    packages=['qcon'],
 
     author = 'pawnhearts',
     author_email = 'ph@kotchan.org',
@@ -18,6 +19,7 @@ Similar to consoles you see in many FPS games.
 Unlike similar projects like guake/yakuake you can use any terminal emulator of your choice.
 Several terminals(or other software) can be configured.
 It's compact and consists of a single file.""",
+
     classifiers=[
         'Environment :: X11 Applications',
         'Intended Audience :: End Users/Desktop',
@@ -25,7 +27,6 @@ It's compact and consists of a single file.""",
         'Programming Language :: Python',
         'Topic :: Terminals :: Terminal Emulators/X Terminals',
     ],
-
     license = "MIT",
     url = 'https://github.com/pawnhearts/qcon',
     download_url = 'https://github.com/pawnhearts/qcon/archive/master.zip',
@@ -34,3 +35,4 @@ It's compact and consists of a single file.""",
     maintainer = 'pawnhearts',
     maintainer_email = 'ph@kotchan.org',
 )
+

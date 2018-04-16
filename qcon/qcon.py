@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-__VERSION__ = '2.4'
+__VERSION__ = '2.5'
 __LICENSE__ = 'MIT'
 __URL__ = 'https://github.com/pawnhearts/qcon/'
 
