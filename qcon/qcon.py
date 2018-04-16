@@ -86,16 +86,16 @@ class Process(object):
     def setup_window(self):
         self.x11window = GdkX11.X11Window.foreign_new_for_display(GdkX11.X11Display.get_default(),
                                                                   self.window.get_xid())
-        func = Gdk.WMFunction.ALL
-        for k, v in Config.defaults().items():
-            if k.startswith('WM_'):
-                func = func | getattr(Gdk.WMFunction,v[3:])
-        self.x11window.set_functions(func)
-        func = Gdk.WMDecoration.ALL
-        for k, v in Config.defaults().items():
-            if k.startswith('DEC_'):
-                func = func | getattr(Gdk.WMDecoration,v[4:])
-        self.x11window.set_decorations(func)
+        # func = Gdk.WMFunction.ALL
+        # for k, v in Config.defaults().items():
+        #     if k.startswith('WM_'):
+        #         func = func | getattr(Gdk.WMFunction,v[3:])
+        # self.x11window.set_functions(func)
+        # func = Gdk.WMDecoration.ALL
+        # for k, v in Config.defaults().items():
+        #     if k.startswith('DEC_'):
+        #         func = func | getattr(Gdk.WMDecoration,v[4:])
+        # self.x11window.set_decorations(func)
 
         self.x11window.set_opacity(Config.getfloat(self.name, 'Opacity'))
         Wnck.Screen.get_default().connect('active_window_changed', self.on_hide_inactive)
@@ -161,16 +161,16 @@ class Process(object):
         # BORDER, TITLE, MINIMIZE, MENU, RESIZEH, MAXIMIZE
 
 
-        func = Gdk.WMFunction.ALL
-        for k, v in Config.defaults().items():
-            if k.startswith('WM_'):
-                func = func | getattr(Gdk.WMFunction,v[3:])
-        self.x11window.set_functions(func)
-        func = Gdk.WMDecoration.ALL
-        for k, v in Config.defaults().items():
-            if k.startswith('DEC_'):
-                func = func | getattr(Gdk.WMDecoration,v[4:])
-        self.x11window.set_decorations(func)
+        # func = Gdk.WMFunction.ALL
+        # for k, v in Config.defaults().items():
+        #     if k.startswith('WM_'):
+        #         func = func | getattr(Gdk.WMFunction,v[3:])
+        # self.x11window.set_functions(func)
+        # func = Gdk.WMDecoration.ALL
+        # for k, v in Config.defaults().items():
+        #     if k.startswith('DEC_'):
+        #         func = func | getattr(Gdk.WMDecoration,v[4:])
+        # self.x11window.set_decorations(func)
 
         scr = Wnck.Screen.get_default()
         if Config.get(self.name, 'Width').endswith('%'):
