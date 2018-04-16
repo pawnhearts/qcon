@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-__VERSION__ = '2.3'
+__VERSION__ = '2.4'
 __LICENSE__ = 'MIT'
 __URL__ = 'https://github.com/pawnhearts/qcon/'
 
@@ -47,14 +47,7 @@ Decorations: true
 Opacity: 0.7
 """
 
-processes = []
 
-def is_process_running(process_id):
-    try:
-        os.kill(process_id, 0)
-        return True
-    except OSError:
-        return False
 
 
 def find_term():
@@ -142,9 +135,7 @@ class Process(object):
         if errcode != 0:
             raise OSError('Terminal {} crashed'.format(self.name))
         if Config.getboolean(self.name, 'Restart'):
-            processes.remove(self)
-            pr = Process(self.name)
-            processes.append(pr)
+            Process(self.name)
             del self
         else:
             sys.exit()
@@ -194,22 +185,25 @@ def make_menu():
     return menu
 
 
+def is_process_running(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def kill_children():
+    os.kill(os.getsid(os.getpid()), signal.SIGTERM)
+
+
 def kill_other_copies():
-    os.system('ps aux|grep qcon.py|grep -v {}'.format(os.getpid()))
+    os.system("ps aux|grep qcon.py|grep -v {}|awk '{print $2}'|xargs kill -7".format(os.getpid()))
 
 
-def on_restrast():
+def restart():
     kill_other_copies()
     os.execv(sys.executable, ['python'] + sys.argv)
-
-
-@atexit.register
-def kill_terms():
-    for proc in processes:
-        try:
-            os.kill(proc.pid, 9)
-        except OSError:
-            pass
 
 
 if __name__ == '__main__':
@@ -221,11 +215,13 @@ if __name__ == '__main__':
     Config = ConfigParser.ConfigParser()
     Config.read(os.path.expanduser('~/.qconrc'))
     signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.signal(signal.SIGHUP, restart)
+    atexit.register(kill_children)
     Keybinder.init()
     indicator = AppIndicator3.Indicator.new('qcon', 'qcon', AppIndicator3.IndicatorCategory.OTHER)
     indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
     indicator.set_menu(make_menu())
     indicator.set_icon('utilities-terminal')
     for section in Config.sections():
-        processes.append(Process(section))
+        Process(section)
     Gtk.main()
