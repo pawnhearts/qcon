@@ -152,13 +152,26 @@ class Process(object):
 
     def setup_geometry(self):
         if Config.getboolean(self.name, 'Decorations'):
-            self.x11window.set_decorations(Gdk.WMDecoration.MINIMIZE | Gdk.WMDecoration.TITLE | Gdk.WMDecoration.BORDER)
+            dec = Gdk.WMDecoration.TITLE | Gdk.WMDecoration.BORDER
+            self.x11window.set_decorations(dec)
         else:
             self.x11window.set_decorations(0)
 
         if not Config.getboolean(self.name, 'Decorations'):
             self.x11window.set_functions(Gdk.WMFunction.CLOSE | Gdk.WMFunction.MINIMIZE | Gdk.WMFunction.RESIZE)
         # BORDER, TITLE, MINIMIZE, MENU, RESIZEH, MAXIMIZE
+
+        fun = Gdk.WMFunction.CLOSE
+        functions = {'Movable': Gdk.WMFunction.MOVE,
+             'Minimizable': Gdk.WMFunction.MINIMIZE,
+             'Maximizable': Gdk.WMFunction.MAXIMIZE,
+             'Resizable': Gdk.WMFunction.RESIZE}
+        for k, v in functions.items():
+            if Config.get(self.name, k):
+                fun = fun | v
+        self.x11window.set_functions(fun)
+
+
 
 
         # func = Gdk.WMFunction.ALL
@@ -178,7 +191,7 @@ class Process(object):
         else:
             w = Config.getint(self.name, 'Width')
         if Config.get(self.name, 'Height').endswith('%'):
-            h = scr.get_height() / 100.0 * int(Config.getint(self.name, 'Height').rstrip('%'))
+            h = scr.get_height() / 100.0 * int(Config.get(self.name, 'Height').rstrip('%'))
         else:
             h = Config.getint(self.name, 'Height')
         x = Config.getint(self.name, 'Offset-x')
@@ -244,17 +257,10 @@ ConfigDefaults = {
 'HideWhenLosesFocus': 0,
 'Decorations': 1,
 'Opacity': 1.0,
-'MOVE': 1,
-'WM_MAXIMIZE': 1,
-'WM_MINIMIZE': 1,
-'WM_RESIZE': 1,
-'WM_CLOSE': 1,
-'DEC_BORDER': 1,
-'DEC_MAXIMIZE': 1,
-'DEC_MENU': 1,
-'DEC_MINIMIZE': 1,
-'DEC_RESIZEH': 1,
-'DEC_TITLE': 1,
+'Movable': 1,
+'Resizable': 1,
+'Minimizable': 1,
+'Maximizable': 1,
 }
 Config = configparser.ConfigParser(interpolation=None, defaults=ConfigDefaults)
 Config.read(os.path.expanduser('~/.qconrc'))
