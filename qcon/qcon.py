@@ -76,7 +76,6 @@ class Process(object):
         GObject.timeout_add(100, self._search_window)
 
     def _search_window(self):
-        scr = Wnck.Screen.get_default()
         if conf.has_option(self.name, 'instance'):
              for win in scr.get_windows():
                  if win.get_class_instance_name() == conf.get(self.name, 'instance'):
@@ -139,7 +138,6 @@ class Process(object):
     def toggle(self):
         if not getattr(self, 'window', None):
             return
-        scr = Wnck.Screen.get_default()
         if scr.get_active_window() == self.window:
             self.hide()
         else:
@@ -151,6 +149,7 @@ class Process(object):
                 self.hide()
 
     def on_child_exit(self, pid, errcode, proc):
+        Keybinder.unbind(conf.get(proc.name, 'KEY'))
         Process.__instances__.remove(proc)
         if errcode != 0:
             raise OSError('Terminal {} crashed'.format(self.name))
@@ -186,19 +185,6 @@ class Process(object):
 
 
 
-
-        func = Gdk.WMFunction.ALL
-        for k, v in conf.defaults().items():
-            if k.startswith('WM_'):
-                func = func | getattr(Gdk.WMFunction,v[3:])
-        self.x11window.set_functions(func)
-        func = Gdk.WMDecoration.ALL
-        for k, v in conf.defaults().items():
-            if k.startswith('DEC_'):
-                func = func | getattr(Gdk.WMDecoration,v[4:])
-        self.x11window.set_decorations(func)
-
-        scr = Wnck.Screen.get_default()
         if conf.get(self.name, 'Width').endswith('%'):
             w = scr.get_width() / 100.0 * int(conf.get(self.name, 'Width').rstrip('%'))
         else:
@@ -258,7 +244,6 @@ def kill_other_copies():
     os.system(r"ps aux|grep qcon.py|grep -v %s|awk '{print $2}'|xargs kill -7" % os.getpid())
 
 def save_window(*args):
-    scr = Wnck.Screen.get_default()
     win = scr.get_active_window()
     x11window = GdkX11.X11Window.foreign_new_for_display(GdkX11.X11Display.get_default(),
                                                                   win.get_xid())
@@ -301,6 +286,7 @@ ConfigDefaults = {
 'Minimizable': '1',
 'Maximizable': '1',
 }
+scr = Wnck.Screen.get_default()
 conf = configparser.SafeConfigParser(defaults=ConfigDefaults, interpolation=None)
 conf.read(os.path.expanduser('~/.qconrc'))
 signal.signal(signal.SIGINT, signal.SIG_DFL)
