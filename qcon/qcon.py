@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-__VERSION__ = '2.5'
+__VERSION__ = '2.6'
 __LICENSE__ = 'MIT'
 __URL__ = 'https://github.com/pawnhearts/qcon/'
 
@@ -66,12 +66,13 @@ class Process(object):
         self.name = name
         self.spawn_process()
         Keybinder.bind(conf.get(self.name, 'Key'), self.on_key_press)
+        Process.__instances__.add(self)
 
     def spawn_process(self):
         os.chdir(os.path.expanduser('~'))
         ps = Popen(shlex.split(conf.get(self.name, 'Command')), stdout=PIPE, stdin=PIPE)
         self.pid = ps.pid
-        GObject.child_watch_add(self.pid, self.on_child_exit)
+        GObject.child_watch_add(self.pid, self.on_child_exit, self)
         GObject.timeout_add(100, self._search_window)
 
     def _search_window(self):
@@ -86,8 +87,6 @@ class Process(object):
                      self.setup_window()
                      return False
 
-        if not is_process_running(self.pid):
-            raise OSError('Child process for {} died'.format(self.name))
         for win in scr.get_windows():
             if win.get_pid() == self.pid:
                 self.window = win
@@ -120,6 +119,7 @@ class Process(object):
         self.toggle()
 
     def activate(self):
+        print(Process.__instances__)
         if not getattr(self, 'window', None):
             return
         self.window.activate(GdkX11.x11_get_server_time(self.x11window))
@@ -130,9 +130,6 @@ class Process(object):
 
     def hide(self):
         if not getattr(self, 'window', None):
-            return
-        if self.x11window.is_destroyed():
-            GObject.timeout_add(100, self._search_window)
             return
         self.window.minimize()
         self.x11window.iconify()
@@ -153,7 +150,8 @@ class Process(object):
             if window == self.window:
                 self.hide()
 
-    def on_child_exit(self, pid, errcode):
+    def on_child_exit(self, pid, errcode, proc):
+        Process.__instances__.remove(proc)
         if errcode != 0:
             raise OSError('Terminal {} crashed'.format(self.name))
         if conf.getboolean(self.name, 'Restart'):
@@ -176,29 +174,29 @@ class Process(object):
 
         # BORDER, TITLE, MINIMIZE, MENU, RESIZEH, MAXIMIZE
 
-        # fun = Gdk.WMFunction.ALL
-        # functions = {'Movable': Gdk.WMFunction.MOVE,
-        #      'Minimizable': Gdk.WMFunction.MINIMIZE,
-        #      'Maximizable': Gdk.WMFunction.MAXIMIZE,
-        #      'Resizable': Gdk.WMFunction.RESIZE}
-        # for k, v in functions.items():
-        #     if  not conf.getboolean(self.name, k):
-        #         fun = fun | v
-        # self.x11window.set_functions(fun)
+        fun = Gdk.WMFunction.ALL
+        functions = {'Movable': Gdk.WMFunction.MOVE,
+             'Minimizable': Gdk.WMFunction.MINIMIZE,
+             'Maximizable': Gdk.WMFunction.MAXIMIZE,
+             'Resizable': Gdk.WMFunction.RESIZE}
+        for k, v in functions.items():
+            if  not conf.getboolean(self.name, k):
+                fun = fun | v
+        self.x11window.set_functions(fun)
 
 
 
 
-        # func = Gdk.WMFunction.ALL
-        # for k, v in conf.defaults().items():
-        #     if k.startswith('WM_'):
-        #         func = func | getattr(Gdk.WMFunction,v[3:])
-        # self.x11window.set_functions(func)
-        # func = Gdk.WMDecoration.ALL
-        # for k, v in conf.defaults().items():
-        #     if k.startswith('DEC_'):
-        #         func = func | getattr(Gdk.WMDecoration,v[4:])
-        # self.x11window.set_decorations(func)
+        func = Gdk.WMFunction.ALL
+        for k, v in conf.defaults().items():
+            if k.startswith('WM_'):
+                func = func | getattr(Gdk.WMFunction,v[3:])
+        self.x11window.set_functions(func)
+        func = Gdk.WMDecoration.ALL
+        for k, v in conf.defaults().items():
+            if k.startswith('DEC_'):
+                func = func | getattr(Gdk.WMDecoration,v[4:])
+        self.x11window.set_decorations(func)
 
         scr = Wnck.Screen.get_default()
         if conf.get(self.name, 'Width').endswith('%'):
@@ -248,9 +246,12 @@ def is_process_running(pid):
 
 
 def kill_children():
-    os.kill(os.getsid(os.getpid()), signal.SIGKILL)
-    # for proc in Process.__instances__:
-    #     os.kill(proc.pid, signal.SIGKILL)
+    #os.kill(os.getsid(os.getpid()), signal.SIGKILL)
+    for proc in Process.__instances__:
+        try:
+            os.kill(proc.pid, signal.SIGKILL)
+        except:
+            pass
 
 
 def kill_other_copies():
@@ -266,7 +267,7 @@ def save_window(*args):
         conf.add_section(section)
     conf.set(section, 'Class', win.get_class_group_name())
     conf.set(section, 'Instance', win.get_class_instance_name())
-    conf.set(section, 'Command', open('/proc/{}/cmdline'.format(win.get_pid())).read())
+    conf.set(section, 'Command', open('/proc/{}/cmdline'.format(win.get_pid())).read().strip())
     conf.set(section, 'Offset-x', str(x11window.get_position()[0]))
     conf.set(section, 'Offset-y', str(x11window.get_position()[1]))
     conf.set(section, 'Width', str(x11window.get_width()))
@@ -288,17 +289,17 @@ kill_other_copies()
 ConfigDefaults = {
 'Position-x': 'left',
 'Position-y': 'top',
-'Offset-x': 0,
-'Offset-y': 0,
-'StartHidden': False,
-'Restart': True,
-'HideWhenLosesFocus': False,
-'Decorations': 1,
-'Opacity': 1.0,
-'Movable': 1,
-'Resizable': 1,
-'Minimizable': 1,
-'Maximizable': 1,
+'Offset-x': '0',
+'Offset-y': '0',
+'StartHidden': '0',
+'Restart': 'true',
+'HideWhenLosesFocus': 'true',
+'Decorations': 'true',
+'Opacity': '1.0',
+'Movable': '1',
+'Resizable': '1',
+'Minimizable': '1',
+'Maximizable': '1',
 }
 conf = configparser.SafeConfigParser(defaults=ConfigDefaults, interpolation=None)
 conf.read(os.path.expanduser('~/.qconrc'))
