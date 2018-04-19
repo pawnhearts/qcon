@@ -118,7 +118,6 @@ class Process(object):
         self.toggle()
 
     def activate(self):
-        print(Process.__instances__)
         if not getattr(self, 'window', None):
             return
         self.window.activate(GdkX11.x11_get_server_time(self.x11window))
@@ -146,6 +145,8 @@ class Process(object):
     def on_hide_inactive(self, screen, window):
         if conf.getboolean(self.name, 'HideWhenLosesFocus'):
             if window == self.window:
+                if screen.get_active_window().get_group_leader() == window.get_group_leader():
+                    return
                 self.hide()
 
     def on_child_exit(self, pid, errcode, proc):
