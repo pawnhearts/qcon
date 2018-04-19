@@ -145,7 +145,7 @@ class Process(object):
     def on_hide_inactive(self, screen, window):
         if conf.getboolean(self.name, 'HideWhenLosesFocus'):
             if window == self.window:
-                if screen.get_active_window().get_group_leader() == window.get_group_leader():
+                if screen.get_active_window() and screen.get_active_window().get_group_leader() == self.window.get_group_leader():
                     return
                 self.hide()
 
