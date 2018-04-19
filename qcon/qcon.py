@@ -242,7 +242,7 @@ def kill_children():
 
 
 def kill_other_copies():
-    os.system(r"ps aux|grep qcon.py|grep -v %s|awk '{print $2}'|xargs kill -7" % os.getpid())
+    os.system(r"ps aux|grep qcon.py|grep python|grep -v %s|grep -v grep|awk '{print $2}'|xargs kill -7" % os.getpid())
 
 def save_window(*args):
     win = scr.get_active_window()
