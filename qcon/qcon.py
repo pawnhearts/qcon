@@ -70,8 +70,8 @@ class Process(object):
 
     def spawn_process(self):
         os.chdir(os.path.expanduser('~'))
-        ps = Popen(shlex.split(conf.get(self.name, 'Command')), stdout=PIPE, stdin=PIPE)
-        self.pid = ps.pid
+        self.ps = Popen(shlex.split(conf.get(self.name, 'Command')), stdout=PIPE, stdin=PIPE)
+        self.pid = self.ps.pid
         GObject.child_watch_add(self.pid, self.on_child_exit, self)
         GObject.timeout_add(100, self._search_window)
 
@@ -236,7 +236,7 @@ def kill_children():
     #os.kill(os.getsid(os.getpid()), signal.SIGKILL)
     for proc in Process.__instances__:
         try:
-            os.kill(proc.pid, signal.SIGKILL)
+            proc.ps.kill()
         except:
             pass
 
